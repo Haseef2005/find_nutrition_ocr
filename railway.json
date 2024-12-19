@@ -1,6 +1,6 @@
 {
     "build": {
-      "builder": "Docker"
+      "builder": "docker"
     },
     "deploy": {
       "startCommand": "python app.py"
