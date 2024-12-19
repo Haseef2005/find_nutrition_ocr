@@ -1,9 +1,0 @@
-{
-    "build": {
-      "builder": "Python"
-    },
-    "deploy": {
-      "startCommand": "python app.py"
-    },
-    "gpu": true
-  }
