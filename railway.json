@@ -1,7 +1,6 @@
 {
     "build": {
-      "builder": "Python",
-      "dockerfilePath": "./Dockerfile"
+      "builder": "Python"
     },
     "deploy": {
       "startCommand": "python app.py"
