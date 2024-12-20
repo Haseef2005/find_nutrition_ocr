@@ -1,16 +1,14 @@
 from flask import Flask, request, jsonify
 from PIL import Image
 import pytesseract
-from io import BytesIO
+import io
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Ensure Tesseract is configured properly in the container
-pytesseract.pytesseract.tesseract_cmd = "/usr/bin/tesseract"
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
 class FindNutrition:
-    def __init__(self, image, text):
+    def __init__(self, image, text: list):
         self.image = image
         self.text = text
 

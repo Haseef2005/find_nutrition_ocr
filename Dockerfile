@@ -8,12 +8,12 @@ ENV LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1
 
 # Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
+    tesseract-ocr-all \
     libtesseract-dev \
-    build-essential \
-    python3-dev \
+    python3-pip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,8 +29,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Set the Tesseract command path
 ENV TESSERACT_CMD=/usr/bin/tesseract
 
-# Expose the port for the application
+# Expose the port if you're running a web application
 EXPOSE 8000
 
-# Set the default command to run the app with Gunicorn
+# Set the default command
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
