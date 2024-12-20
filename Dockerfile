@@ -1,17 +1,21 @@
-# Use an official Python 3.12.8 runtime as a parent image
-FROM python:3.12.8-slim
+# Use an official lightweight Python image
+FROM python:3.9-slim
 
-# Install dependencies for GPU support
-RUN apt-get update && apt-get install -y \
+# Set environment variables
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
-    wget \
+    tesseract-ocr-eng \
+    libtesseract-dev \
+    build-essential \
+    python3-dev \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-
-# Install CUDA and cuDNN
-RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.1.243-1_amd64.deb && \
-    dpkg -i cuda-repo-ubuntu1804_10.1.243-1_amd64.deb && \
-    apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub && \
-    apt-get update && apt-get install -y cuda
 
 # Set the working directory in the container
 WORKDIR /app
@@ -19,14 +23,14 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Install any needed packages specified in requirements.txt
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set the Tesseract command path
 ENV TESSERACT_CMD=/usr/bin/tesseract
 
-# Make port 8000 available to the world outside this container
+# Expose the port for the application
 EXPOSE 8000
 
-# Run app.py when the container launches
+# Set the default command to run the app with Gunicorn
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
