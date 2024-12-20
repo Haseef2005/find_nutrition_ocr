@@ -5,7 +5,7 @@ import io
 
 app = Flask(__name__)
 
-pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+pytesseract.pytesseract.tesseract_cmd = 'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class FindNutrition:
     def __init__(self, image, text: list):
