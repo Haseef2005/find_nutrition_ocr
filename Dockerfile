@@ -29,4 +29,4 @@ ENV TESSERACT_CMD=/usr/bin/tesseract
 EXPOSE 8000
 
 # Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000"]
