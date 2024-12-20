@@ -12,6 +12,10 @@ class FindNutrition:
         self.image = image
         self.text = text
 
+    def plain_text_ocr(self):
+        text_ocr = pytesseract.image_to_string(self.image)
+        return text_ocr
+
     def find_text_ocr(self):
         found = False
         data = pytesseract.image_to_data(self.image, output_type=pytesseract.Output.DICT)
@@ -22,7 +26,6 @@ class FindNutrition:
                     j = j.lower()
                     word = word.lower()
                     if j in word:
-                        found = True
                         results.append({
                             "word": word,
                             "confidence": data['conf'][i],
@@ -33,23 +36,29 @@ class FindNutrition:
                                 "height": data['height'][i]
                             }
                         })
-        if not found:
-            return {"message": "Nutrition not found, Please check the label by yourself again before you eat."}
-        return results
+                        found = True
+        return results if found else "No matching text found."
 
-@app.route('/ocr', methods=['POST'])
-def ocr():
+@app.route('/plain_text_ocr', methods=['POST'])
+def plain_text_ocr():
     if 'image' not in request.files:
-        return jsonify({"error": "No image provided"}), 400
-
+        return jsonify({"error": "No image file provided"}), 400
     image_file = request.files['image']
     image = Image.open(io.BytesIO(image_file.read()))
-    text_to_find = request.form.getlist('text')
+    ocr = FindNutrition(image, [])
+    text_ocr = ocr.plain_text_ocr()
+    return jsonify({"text": text_ocr})
 
-    nutrition_finder = FindNutrition(image, text_to_find)
-    results = nutrition_finder.find_text_ocr()
-
-    return jsonify(results)
+@app.route('/find_text_ocr', methods=['POST'])
+def find_text_ocr():
+    if 'image' not in request.files or 'text' not in request.json:
+        return jsonify({"error": "Image file or text not provided"}), 400
+    image_file = request.files['image']
+    text_list = request.json['text']
+    image = Image.open(io.BytesIO(image_file.read()))
+    ocr = FindNutrition(image, text_list)
+    results = ocr.find_text_ocr()
+    return jsonify({"results": results})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
