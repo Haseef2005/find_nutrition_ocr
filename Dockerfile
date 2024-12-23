@@ -1,5 +1,5 @@
-# Use an official lightweight Python image
-FROM python:3.12.8-slim
+# Use an official lightweight Python image with CUDA support
+FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu20.04
 
 # Set environment variables
 ENV LANG=C.UTF-8 \
