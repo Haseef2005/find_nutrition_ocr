@@ -38,5 +38,5 @@ ENV TESSERACT_CMD=/usr/bin/tesseract
 # Expose the port if you're running a web application
 EXPOSE 8000
 
-# Set the default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--timeout", "120", "app:app"]
+# Set the default command with 3 workers
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "app:app"]
