@@ -163,4 +163,4 @@ def find_text():
 
 # Run the app (if not in Docker, use this line for debugging)
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8080)
