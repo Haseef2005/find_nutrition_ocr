@@ -31,17 +31,16 @@ cd find-nutrition-ocr
 
 2. Install the required Python packages:
 
-```sh
 pip install -r requirements.txt
 
 3. Install Tesseract OCR:
 
-```sh
 Ubuntu:
 sudo apt-get update
 sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-all libtesseract-dev
 
 Windows: Download and install Tesseract OCR from here.
+```
 
 ## API Endpoints
 
