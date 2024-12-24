@@ -44,20 +44,22 @@ Windows: Download and install Tesseract OCR from here.
 
 ## API Endpoints
 
-POST /ocr: Perform OCR on the uploaded image.
+1. POST /ocr: Perform OCR on the uploaded image.
 
 Request:
 image: The image file to be processed.
 text: List of text strings to find in the image.
 Response:
 ocr_data: List of detected words and their bounding boxes.
-POST /plain_text: Get plain text OCR for the uploaded image.
+
+2. POST /plain_text: Get plain text OCR for the uploaded image.
 
 Request:
 image: The image file to be processed.
 Response:
 plain_text: List of detected text strings.
-POST /find_text: Find specific text in the uploaded image.
+
+3. POST /find_text: Find specific text in the uploaded image.
 
 Request:
 image: The image file to be processed.
