@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from PIL import Image
 import pytesseract
 from ultralyticsplus import YOLO
+import base64
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -48,7 +50,7 @@ class FindNutrition:
     def find_text_ocr(self, image):
         found_text = []
         data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
-        for i, word in enumerate(data['text']):
+        for i, word in enumerate(data['text']): 
             if word.strip():  # Filter out empty results
                 for j in self.text:
                     if j.lower() in word.lower():
@@ -64,15 +66,144 @@ class FindNutrition:
                         })
         return found_text
 
+    def extract_nutritional_content(self, ocr_results):
+        keywords = [
+            # Macronutrients
+            'dietary fiber', 'sugars', 'soluble fiber', 'insoluble fiber',
+            'monounsaturated fat', 'polyunsaturated fat', 'trans fat',
+            'saturated fat', 'total fat', 'total carbohydrate', 'protein',
+            'total calories', 'calories from fat', 'fat',
+
+            # Vitamins
+            'vitamin a', 'vitamin c', 'vitamin d', 'vitamin e',
+            'vitamin k', 'vitamin b6', 'vitamin b12',
+            'thiamin', 'riboflavin', 'niacin', 'folic acid', 'folate',
+            'biotin', 'pantothenic acid',
+
+            # Minerals
+            'calcium', 'iron', 'magnesium', 'potassium',
+            'sodium', 'zinc', 'phosphorus', 'copper', 'manganese',
+            'selenium', 'iodine', 'chromium', 'molybdenum',
+
+            # Other Nutrition Components
+            'cholesterol', 'added sugars', 'sugar alcohols',
+            'omega-3 fatty acids', 'omega-6 fatty acids',
+            'other carbohydrate', 'alcohol', 'total sugars', 'dietary fiber',
+
+            # Common Ingredients
+            'milk', 'eggs', 'fish', 'shellfish', 'tree nuts',
+            'peanuts', 'wheat', 'soy', 'gluten', 'sesame', 'corn',
+            'rice', 'yeast', 'flour', 'sugar', 'salt', 'oil',
+            'butter', 'cream', 'honey', 'vinegar', 'cheese',
+            'yogurt', 'gelatin', 'beef', 'pork', 'chicken', 'lamb',
+
+            # Additives and Flavorings
+            'artificial flavors', 'natural flavors', 'preservatives',
+            'coloring', 'emulsifiers', 'stabilizers', 'additives',
+            'sweeteners', 'lecithin', 'sorbitol', 'maltodextrin',
+            'xanthan gum', 'agar', 'pectin', 'caramel color',
+
+            # Spices and Herbs
+            'cinnamon', 'basil', 'oregano', 'parsley', 'pepper',
+            'turmeric', 'ginger', 'garlic', 'onion', 'coriander',
+            'paprika', 'cardamom', 'clove', 'nutmeg', 'bay leaf',
+
+            # Serving Information
+            'serving size', 'servings per container', 'daily value',
+            'percent daily value', 'calories per serving',
+
+            # Labels (for Identification)
+            'non-gmo', 'organic', 'vegan', 'kosher', 'halal', 'gluten-free',
+            'low fat', 'low sodium', 'sugar-free', 'no added sugar',
+
+            # Common Allergens
+            'milk', 'eggs', 'fish', 'shellfish', 'tree nuts',
+            'peanuts', 'wheat', 'soy', 'gluten', 'sesame',
+
+            # Specific Tree Nuts
+            'almonds', 'cashews', 'walnuts', 'pecans',
+            'hazelnuts', 'pistachios', 'macadamia nuts',
+
+            # Shellfish and Seafood
+            'shrimp', 'crab', 'lobster', 'oysters', 'scallops',
+            'mussels', 'squid', 'clams', 'anchovies', 'cod',
+            'salmon', 'tuna', 'sardines', 'trout', 'haddock',
+
+            # Dairy Products
+            'butter', 'cream', 'cheese', 'yogurt', 'whey', 'casein',
+            'lactose', 'milk powder', 'skim milk', 'whole milk',
+
+            # Grains (Potential Allergens)
+            'wheat', 'barley', 'rye', 'oats', 'corn', 'rice',
+            'buckwheat', 'spelt', 'quinoa', 'millet', 'amaranth',
+
+            # Soy Products
+            'soybeans', 'soy milk', 'tofu', 'soy sauce', 'edamame',
+            'soy protein', 'soy lecithin',
+
+            # Food Additives
+            'artificial flavors', 'natural flavors', 'preservatives',
+            'coloring', 'stabilizers', 'emulsifiers', 'sweeteners',
+            'lecithin', 'sorbitol', 'xanthan gum', 'maltodextrin',
+            'carrageenan', 'gelatin', 'pectin', 'aspartame',
+            'sucralose', 'acesulfame potassium',
+
+            # Common Oils and Fats
+            'vegetable oil', 'palm oil', 'canola oil', 'soybean oil',
+            'olive oil', 'coconut oil', 'sunflower oil', 'butter',
+
+            # Sweeteners and Sugars
+            'sugar', 'high fructose corn syrup', 'honey', 'agave',
+            'maple syrup', 'molasses', 'brown sugar', 'cane sugar',
+            'invert sugar', 'glucose', 'fructose', 'lactose',
+            'maltose', 'dextrose', 'sucrose',
+
+            # Eggs and Egg Products
+            'whole egg', 'egg whites', 'egg yolks', 'powdered egg',
+
+            # Meat and Meat Byproducts
+            'beef', 'pork', 'chicken', 'turkey', 'lamb',
+            'gelatin', 'broth', 'stock', 'sausage', 'bacon',
+
+            # Spices and Seasonings
+            'salt', 'pepper', 'garlic', 'onion', 'cinnamon',
+            'nutmeg', 'clove', 'paprika', 'cumin', 'turmeric',
+            'oregano', 'basil', 'parsley', 'thyme', 'chili',
+
+            # Legumes (Potential Allergens)
+            'lentils', 'chickpeas', 'peas', 'black beans',
+            'kidney beans', 'pinto beans', 'lupin',
+
+            # Seeds
+            'sesame', 'sunflower seeds', 'pumpkin seeds', 'chia seeds',
+            'flaxseeds', 'hemp seeds', 'poppy seeds',
+
+            # Miscellaneous Ingredients
+            'yeast', 'vinegar', 'cocoa', 'chocolate', 'coffee',
+            'tea', 'mushrooms', 'lemon', 'lime', 'apple',
+            'banana', 'strawberry', 'blueberry', 'orange',
+
+            # Gluten-Free Alternatives
+            'corn starch', 'potato starch', 'tapioca', 'arrowroot',
+            'almond flour', 'coconut flour'
+        ]
+
+        nutritional_content = set()
+        for word in ocr_results:
+            word_lower = word['word'].lower()
+            if any(keyword in word_lower for keyword in keywords):
+                nutritional_content.add(word['word'])
+        return nutritional_content
+
 @app.route('/ocr', methods=['POST'])
 def ocr():
-    if 'image' not in request.files:
+    if 'image' not in request.json:
         return jsonify({"error": "No image file provided"}), 400
-    image_file = request.files['image']
-    text_to_find = request.form.getlist('text')
+    image_data = request.json['image']
+    text_to_find = request.json.get('text', [])
 
-    # Convert uploaded image to PIL format
-    image = Image.open(image_file)
+    # Decode base64 image
+    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, text_to_find)
@@ -99,12 +230,12 @@ def ocr():
 
 @app.route('/plain_text', methods=['POST'])
 def plain_text():
-    if 'image' not in request.files:
+    if 'image' not in request.json:
         return jsonify({"error": "No image file provided"}), 400
-    image_file = request.files['image']
+    image_data = request.json['image']
 
-    # Convert uploaded image to PIL format
-    image = Image.open(image_file)
+    # Decode base64 image
+    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, [])
@@ -127,13 +258,13 @@ def plain_text():
 
 @app.route('/find_text', methods=['POST'])
 def find_text():
-    if 'image' not in request.files:
+    if 'image' not in request.json:
         return jsonify({"error": "No image file provided"}), 400
-    image_file = request.files['image']
-    text_to_find = request.form.getlist('text')
+    image_data = request.json['image']
+    text_to_find = request.json.get('text', [])
 
-    # Convert uploaded image to PIL format
-    image = Image.open(image_file)
+    # Decode base64 image
+    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, text_to_find)
@@ -160,6 +291,26 @@ def find_text():
         return jsonify({"message": "Nutrition not found. Please check the label manually before eating."}), 404
 
     return jsonify({"found_text": list(results)})
+
+@app.route('/extract_nutritional_content', methods=['POST'])
+def extract_nutritional_content():
+    if 'image' not in request.json:
+        return jsonify({"error": "No image file provided"}), 400
+    image_data = request.json['image']
+
+    # Decode base64 image
+    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
+
+    # Initialize the OCR class
+    nutrition_finder = FindNutrition(image, [])
+
+    # Get plain text OCR results
+    ocr_results = nutrition_finder.ocr(image)
+
+    # Extract nutritional content
+    nutritional_content = nutrition_finder.extract_nutritional_content(ocr_results)
+
+    return jsonify({"nutritional_content": list(nutritional_content)})
 
 # Run the app (if not in Docker, use this line for debugging)
 if __name__ == '__main__':
