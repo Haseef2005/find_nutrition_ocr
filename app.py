@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from PIL import Image, UnidentifiedImageError
 import pytesseract
 from ultralyticsplus import YOLO
@@ -7,6 +8,7 @@ from io import BytesIO
 import requests
 
 app = Flask(__name__)
+CORS(app) # Enable CORS for the API
 
 pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
 
