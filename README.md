@@ -25,44 +25,116 @@ This project uses Optical Character Recognition (OCR) to detect and extract nutr
 
 1. Clone the repository:
 
-```sh
-git clone https://github.com/yourusername/find-nutrition-ocr.git
-cd find-nutrition-ocr
+    ```sh
+    git clone https://github.com/yourusername/find-nutrition-ocr.git
+    cd find-nutrition-ocr
+    ```
 
 2. Install the required Python packages:
 
-pip install -r requirements.txt
+    ```sh
+    pip install -r requirements.txt
+    ```
 
 3. Install Tesseract OCR:
 
-Ubuntu:
-sudo apt-get update
-sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-all libtesseract-dev
+    - **Ubuntu**:
+      ```sh
+      sudo apt-get update
+      sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-all libtesseract-dev
+      ```
 
-Windows: Download and install Tesseract OCR from here.
-```
+    - **Windows**: Download and install Tesseract OCR from [here](https://github.com/tesseract-ocr/tesseract).
+
+## Running the Application
+
+1. **Locally**:
+
+    ```sh
+    python app.py
+    ```
+
+2. **Using Docker**:
+
+    Build the Docker image:
+
+    ```sh
+    docker build -t find-nutrition-ocr .
+    ```
+
+    Run the Docker container:
+
+    ```sh
+    docker run -p 8080:8080 find-nutrition-ocr
+    ```
 
 ## API Endpoints
 
-1. POST /ocr: Perform OCR on the uploaded image.
+1. **POST /ocr**: Perform OCR on the uploaded image.
 
-Request:
-image: The image file to be processed.
-text: List of text strings to find in the image.
-Response:
-ocr_data: List of detected words and their bounding boxes.
+    - **Request**:
+      - `image`: The image file to be processed.
+      - `text`: List of text strings to find in the image.
 
-2. POST /plain_text: Get plain text OCR for the uploaded image.
+    - **Response**:
+      - `ocr_data`: List of detected words and their bounding boxes.
 
-Request:
-image: The image file to be processed.
-Response:
-plain_text: List of detected text strings.
+2. **POST /plain_text**: Get plain text OCR for the uploaded image.
 
-3. POST /find_text: Find specific text in the uploaded image.
+    - **Request**:
+      - `image`: The image file to be processed.
 
-Request:
-image: The image file to be processed.
-text: List of text strings to find in the image.
-Response:
-found_text: List of found text strings.
+    - **Response**:
+      - `plain_text`: List of detected text strings.
+
+3. **POST /find_text**: Find specific text in the uploaded image.
+
+    - **Request**:
+      - `image`: The image file to be processed.
+      - `text`: List of text strings to find in the image.
+
+    - **Response**:
+      - `found_text`: List of found text strings.
+
+4. **POST /final_info**: Extract nutritional content and get allergy information.
+
+    - **Request**:
+      - `image`: The image file to be processed.
+      - `user_id`: The user ID.
+      - `allergy`: List of allergies.
+
+    - **Response**:
+      - `final_result`: JSON object containing nutritional content and allergy information.
+
+## Deployment
+
+### Deploying to google cloud 
+
+url service: https://find-nutrition-ocr-560152343412.asia-southeast1.run.app
+Expires March 25, 2025 (Free Trial)
+
+## Postman Collection
+
+To make it easier to test the API endpoints, you can use the provided Postman collection.
+
+### Importing the Postman Collection
+
+1. Download the Postman collection file: [ocr-safebite.postman_collection.json]
+
+2. Open Postman.
+
+3. Click on the "Import" button in the top-left corner.
+
+4. Select the "Upload Files" tab.
+
+5. Choose the downloaded `find_nutrition_ocr.postman_collection.json` file and click "Open".
+
+6. The collection will be imported into Postman, and you can now use it to test the API endpoints.
+
+### Postman Collection File
+
+You can find the Postman collection file in the repository: [ocr-safebite.postman_collection.json]
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
