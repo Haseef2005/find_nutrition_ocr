@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import pytesseract
 from ultralyticsplus import YOLO
 import base64
 from io import BytesIO
+import requests
 
 app = Flask(__name__)
 
@@ -194,6 +195,75 @@ class FindNutrition:
             if any(keyword in word_lower for keyword in keywords):
                 nutritional_content.add(word['word'])
         return nutritional_content
+def final_info(image_data_base64, user_id, allergy: list):
+    # Decode base64 image
+    try:
+        image = Image.open(BytesIO(base64.b64decode(image_data_base64)))
+    except (base64.binascii.Error, UnidentifiedImageError) as e:
+        return {"error": "Invalid image data"}
+
+    # Initialize the OCR class
+    nutrition_finder = FindNutrition(image, [])
+
+    # Get plain text OCR results
+    ocr_results = nutrition_finder.ocr(image)
+
+    # Extract nutritional content
+    nutritional_content = nutrition_finder.extract_nutritional_content(ocr_results)
+
+    # Prepare the payload for the allergy API
+    payload = {
+        "ingredients": ["Egg", "Coconut milk"]  # Replace with actual ingredients if needed
+    }
+
+    # Make a request to the other API to get allergy information
+    allergy_api_url = "https://recommend-api-production.up.railway.app/allergy/ingredient"
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(allergy_api_url, json=payload, headers=headers)
+    if response.status_code != 200:
+        return {"error": "Failed to fetch allergy information"}
+
+    allergy_info = response.json()
+
+    # Make a request to the other API to get option
+    pop_option = "https://recommend-api-production.up.railway.app/recommend/popularity"  # Replace with the actual URL of the other API
+    response = requests.get(pop_option)
+    if response.status_code != 200:
+        return {"error": "Failed to fetch pop option information"}
+
+    pop_option_info = response.json()
+
+    # Check for common allergens
+    warning = False
+    allergens = {allergen.lower() for allergen in allergy_info.get("allergy", [])}
+    user_allergens = {allergen.lower() for allergen in allergy}
+    common_allergens = allergens.intersection(user_allergens)
+    if common_allergens:
+        warning = True
+
+    # Combine the results
+    final_result = {
+        "user_id": user_id,
+        "allergy": allergy,
+        "warning": warning,
+        "allergy_info": allergy_info.get("allergy", []),
+        "best_restaurant": pop_option_info.get("best_restaurant", []),
+        "nutritional_content": list(nutritional_content)
+    }
+    return final_result
+
+@app.route('/final_info', methods=['POST'])
+def final_info_endpoint():
+    data = request.json
+    if 'image' not in data or 'user_id' not in data or 'allergy' not in data:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    image_data_base64 = data['image']
+    user_id = data['user_id']
+    allergy = data['allergy']
+
+    result = final_info(image_data_base64, user_id, allergy)
+    return jsonify(result)
 
 @app.route('/ocr', methods=['POST'])
 def ocr():
@@ -203,7 +273,7 @@ def ocr():
     text_to_find = request.json.get('text', [])
 
     # Decode base64 image
-    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
+    image = Image.open(BytesIO(base64.b64decode(image_data)))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, text_to_find)
@@ -235,7 +305,7 @@ def plain_text():
     image_data = request.json['image']
 
     # Decode base64 image
-    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
+    image = Image.open(BytesIO(base64.b64decode(image_data)))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, [])
@@ -264,7 +334,7 @@ def find_text():
     text_to_find = request.json.get('text', [])
 
     # Decode base64 image
-    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
+    image = Image.open(BytesIO(base64.b64decode(image_data)))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, text_to_find)
@@ -299,7 +369,7 @@ def extract_nutritional_content():
     image_data = request.json['image']
 
     # Decode base64 image
-    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
+    image = Image.open(BytesIO(base64.b64decode(image_data.split)))
 
     # Initialize the OCR class
     nutrition_finder = FindNutrition(image, [])
@@ -315,3 +385,4 @@ def extract_nutritional_content():
 # Run the app (if not in Docker, use this line for debugging)
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8080)
+
